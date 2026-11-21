@@ -1,0 +1,12 @@
+{
+  "name": "dustbot-dash",
+  "version": "1.0.0",
+  "private": true,
+  "description": "An original maze-chase browser game: a robot vacuum, dust bunnies and some very curious cats.",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/maze.test.mjs",
+    "start": "npx --yes http-server -p 8080 -c-1 ."
+  },
+  "license": "MIT"
+}
