@@ -1,6 +1,6 @@
 // Dustbot Dash: game state, loop and UI wiring.
-import { W, H, FLOOR, generateMaze, ROBOT_START, PEN_SPOTS, YARN_SPOTS } from './maze.js';
-import { Robot, Cat, CAT_DEFS } from './entities.js';
+import { W, H, FLOOR, generateMaze, ROBOT_START, PEN_SPOTS, ICE_SPOTS } from './maze.js';
+import { Robot, Dino, DINO_DEFS } from './entities.js';
 import { Renderer } from './render.js';
 import { Input } from './input.js';
 import { Sfx } from './audio.js';
@@ -75,8 +75,8 @@ class Game {
 
   // ---- level parameters ----
   get robotSpeed() { return Math.min(8.6, 7.2 + 0.2 * (this.level - 1)); }
-  get catSpeed() { return Math.min(8.3, 6.0 + 0.35 * (this.level - 1)); }
-  get yarnTime() { return Math.max(2, 7 - 0.7 * (this.level - 1)); }
+  get dinoSpeed() { return Math.min(8.3, 6.0 + 0.35 * (this.level - 1)); }
+  get iceTime() { return Math.max(2, 7 - 0.7 * (this.level - 1)); }
 
   isActive() { return ['ready', 'playing', 'dying', 'levelclear'].includes(this.state); }
 
@@ -102,25 +102,25 @@ class Game {
       for (let x = 0; x < W; x++) {
         if (this.grid[y][x] !== FLOOR) continue;
         if (x === ROBOT_START.x && y === ROBOT_START.y) continue;
-        if (YARN_SPOTS.some((p) => p.x === x && p.y === y)) continue;
+        if (ICE_SPOTS.some((p) => p.x === x && p.y === y)) continue;
         this.dust[y * W + x] = 1;
         n++;
       }
     }
     this.dustLeft = n;
     this.dustTotal = n;
-    this.yarn = YARN_SPOTS.map((p) => ({ ...p, alive: true }));
-    this.sock = { active: false, x: ROBOT_START.x, y: ROBOT_START.y, timer: 0, spawned: 0 };
+    this.ice = ICE_SPOTS.map((p) => ({ ...p, alive: true }));
+    this.amber = { active: false, x: ROBOT_START.x, y: ROBOT_START.y, timer: 0, spawned: 0 };
     this.renderer.setMaze(this.grid);
     this.resetActors();
   }
 
   resetActors() {
     this.robot = new Robot(ROBOT_START.x, ROBOT_START.y);
-    const count = this.level >= 3 ? 4 : 3;
     const relScale = Math.max(0.35, 1 - 0.12 * (this.level - 1));
-    this.cats = CAT_DEFS.slice(0, count).map((d, i) => new Cat(d, PEN_SPOTS[i], d.release * relScale));
-    this.yarnTimer = 0;
+    this.dinos = DINO_DEFS.filter((d) => this.level >= d.from)
+      .map((d, i) => new Dino(d, PEN_SPOTS[i], d.release * relScale));
+    this.iceTimer = 0;
     this.chain = 0;
     this.modeIdx = 0;
     this.modeTime = 0;
@@ -184,11 +184,11 @@ class Game {
   updatePlaying(dt) {
     if (this.freeze > 0) { this.freeze -= dt; return; }
 
-    if (this.yarnTimer > 0) {
-      this.yarnTimer -= dt;
-      if (this.yarnTimer <= 0) {
-        this.yarnTimer = 0;
-        for (const cat of this.cats) if (cat.state === 'scared') cat.state = 'roam';
+    if (this.iceTimer > 0) {
+      this.iceTimer -= dt;
+      if (this.iceTimer <= 0) {
+        this.iceTimer = 0;
+        for (const dino of this.dinos) if (dino.state === 'scared') dino.state = 'roam';
       }
     } else {
       this.modeTime += dt;
@@ -196,11 +196,11 @@ class Game {
         this.modeIdx++;
         this.modeTime = 0;
         this.mode = MODES[this.modeIdx][0];
-        for (const cat of this.cats) if (cat.state === 'roam') cat.reverse();
+        for (const dino of this.dinos) if (dino.state === 'roam') dino.reverse();
       }
     }
 
-    const s = this.sock;
+    const s = this.amber;
     if (s.active) {
       s.timer -= dt;
       if (s.timer <= 0) s.active = false;
@@ -213,8 +213,8 @@ class Game {
     }
 
     this.robot.update(dt, this.robotSpeed, this.grid, () => this.robotArrived());
-    const ctx = { grid: this.grid, robot: this.robot, mode: this.mode, catSpeed: this.catSpeed, rng: Math.random };
-    for (const cat of this.cats) cat.update(dt, ctx);
+    const ctx = { grid: this.grid, robot: this.robot, mode: this.mode, dinoSpeed: this.dinoSpeed, robotSpeed: this.robotSpeed, rng: Math.random };
+    for (const dino of this.dinos) dino.update(dt, ctx);
     if (this.checkCollisions()) return;
 
     if (this.dustLeft === 0) {
@@ -234,51 +234,51 @@ class Game {
       this.addScore(10);
       this.sfx.dust();
     }
-    for (const yarn of this.yarn) {
-      if (yarn.alive && yarn.x === x && yarn.y === y) {
-        yarn.alive = false;
+    for (const ice of this.ice) {
+      if (ice.alive && ice.x === x && ice.y === y) {
+        ice.alive = false;
         this.addScore(50);
-        this.startYarn();
+        this.startIce();
       }
     }
-    const s = this.sock;
+    const s = this.amber;
     if (s.active && s.x === x && s.y === y) {
       s.active = false;
       const pts = 100 * Math.min(10, this.level) + 200;
       this.addScore(pts);
       this.popup(x, y, String(pts), '#9ec1ff');
-      this.sfx.sock();
+      this.sfx.amber();
     }
     return false;
   }
 
-  startYarn() {
-    this.yarnTimer = this.yarnTime;
+  startIce() {
+    this.iceTimer = this.iceTime;
     this.chain = 0;
-    for (const cat of this.cats) {
-      if (cat.state === 'roam') { cat.state = 'scared'; cat.reverse(); }
+    for (const dino of this.dinos) {
+      if (dino.state === 'roam') { dino.state = 'scared'; dino.reverse(); }
     }
-    this.sfx.yarn();
+    this.sfx.ice();
   }
 
   checkCollisions() {
     const r = this.robot;
-    for (const cat of this.cats) {
-      if (cat.state === 'pen' || cat.state === 'eaten') continue;
-      const dx = cat.px - r.px, dy = cat.py - r.py;
+    for (const dino of this.dinos) {
+      if (dino.state === 'pen' || dino.state === 'eaten') continue;
+      const dx = dino.px - r.px, dy = dino.py - r.py;
       if (dx * dx + dy * dy > 0.45) continue;
-      if (cat.state === 'scared') {
-        cat.state = 'eaten';
+      if (dino.state === 'scared') {
+        dino.state = 'eaten';
         const pts = 200 * 2 ** this.chain;
         this.chain = Math.min(this.chain + 1, 3);
         this.addScore(pts);
-        this.popup(cat.px, cat.py, String(pts), '#ffd34f');
+        this.popup(dino.px, dino.py, String(pts), '#ffd34f');
         this.freeze = 0.45;
-        this.sfx.catCaught();
+        this.sfx.dinoCaught();
       } else {
         this.state = 'dying';
         this.stateTime = 0;
-        this.yarnTimer = 0;
+        this.iceTimer = 0;
         this.sfx.death();
         return true;
       }

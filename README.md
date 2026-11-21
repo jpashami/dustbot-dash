@@ -1,28 +1,31 @@
 # Dustbot Dash
 
-An original maze-chase game for the browser. You're a little robot vacuum: clean up every dust bunny in the room and keep away from the household cats.
+An original maze-chase game for the browser. It's the night shift at the natural history museum, and the dinosaurs have woken up. You're a little robot vacuum: clean up every dust bunny in the hall and stay out of their way.
 
 **Play it:** https://jpashami.github.io/dustbot-dash/
 
 ## How to play
 
 - **Steer:** arrow keys or WASD. On a phone, swipe anywhere.
-- **Dust bunny:** 10 points. Clear them all to finish the room.
-- **Yarn** (in the corners): the cats get distracted for a few seconds. Bump one to send it back to its bed: 200, 400, 800, then 1600 points.
-- **Lost sock:** appears twice per room for bonus points.
+- **Dust bunny:** 10 points. Clear them all to finish the hall.
+- **Ice crystal** (in the corners): chills the dinosaurs for a few seconds. Bump one while it's shivering to send it back to the nest: 200, 400, 800, then 1600 points.
+- **Amber:** appears twice per hall for bonus points.
 - **Pause:** P or Esc. **Mute:** M.
 - You get one extra life at 10,000 points.
 
-Every room is a new maze, generated when the room starts. The cats get faster and the yarn wears off sooner as you go.
+Every hall is a new maze, generated when it starts. The dinosaurs get faster and the ice melts sooner as you go.
 
-### The cats
+### The dinosaurs
 
-| Cat | Habit |
-|---|---|
-| Biscuit (ginger) | Takes the shortest path straight to you |
-| Smudge (grey) | Aims a few tiles ahead of where you're heading |
-| Pepper (black) | Wanders, but pounces when you get close |
-| Mochi (calico, from room 3) | Stalks from a distance, backs off when you're near |
+Each one moves differently, not just towards a different target.
+
+| Dinosaur | Joins | Trick |
+|---|---|---|
+| Rex (T-Rex) | Hall 1 | Takes the shortest path to you. Speeds up on long straight halls, slows down on corners. |
+| Zip (Raptor) | Hall 1 | Quick. Aims a few tiles ahead of you, and every few seconds bursts into a sprint. |
+| Trike (Triceratops) | Hall 1 | Slow and wandering, but charges hard (red eyes, steam) if it spots you down a straight hall. |
+| Ptera (Pterodactyl) | Hall 3 | Flies around at random, then swoops straight at you every few seconds. |
+| Bronto (Brontosaurus) | Hall 5 | Very slow. Patrols around its nest and only chases you if you come close. |
 
 ## Run locally
 
@@ -44,8 +47,8 @@ node tests/maze.test.mjs
 
 | File | What it does |
 |---|---|
-| `src/maze.js` | Maze generator: depth-first carve, mirrored, dead ends removed, central cat bed |
-| `src/entities.js` | Robot and cat movement, cat behaviours (BFS pathfinding) |
+| `src/maze.js` | Maze generator: depth-first carve, mirrored, dead ends removed, central nest |
+| `src/entities.js` | Robot and dinosaur movement, each dinosaur's trick (BFS pathfinding) |
 | `src/render.js` | Canvas drawing; all art is drawn in code |
 | `src/audio.js` | Sound effects synthesized with WebAudio |
 | `src/input.js` | Keyboard and swipe input |

@@ -56,21 +56,22 @@ export class Sfx {
     this.flip = !this.flip;
     this.tone(this.flip ? 880 : 700, 0.045, { type: 'triangle', vol: 0.05 });
   }
-  yarn() {
-    this.tone(260, 0.4, { type: 'sawtooth', vol: 0.06, to: 880, filter: 1800 });
-    this.tone(390, 0.4, { type: 'square', vol: 0.035, to: 1320, delay: 0.06, filter: 2200 });
+  ice() {
+    [1568, 1319, 1175, 988, 1319, 1760].forEach((f, i) =>
+      this.tone(f, 0.22, { type: 'sine', vol: 0.06, delay: i * 0.05 }));
+    this.tone(2400, 0.5, { type: 'triangle', vol: 0.02, to: 1200, delay: 0.05 });
   }
-  catCaught() {
-    this.tone(620, 0.12, { type: 'sawtooth', vol: 0.07, to: 1050, filter: 2600 });
-    this.tone(1050, 0.28, { type: 'sawtooth', vol: 0.07, to: 460, delay: 0.12, filter: 2200 });
+  dinoCaught() {
+    // Short growl that tumbles down.
+    this.tone(220, 0.32, { type: 'sawtooth', vol: 0.09, to: 70, filter: 900 });
+    this.tone(330, 0.22, { type: 'square', vol: 0.04, to: 110, delay: 0.04, filter: 1200 });
   }
   death() {
     this.tone(640, 1.0, { type: 'square', vol: 0.06, to: 70, filter: 1400 });
     this.tone(960, 1.0, { type: 'triangle', vol: 0.05, to: 110, delay: 0.12 });
   }
-  sock() {
-    this.tone(990, 0.09, { type: 'square', vol: 0.05 });
-    this.tone(1480, 0.14, { type: 'square', vol: 0.05, delay: 0.09 });
+  amber() {
+    [1175, 1568, 2093].forEach((f, i) => this.tone(f, 0.12, { type: 'triangle', vol: 0.05, delay: i * 0.06 }));
   }
   extraLife() {
     [784, 988, 1175, 1568].forEach((f, i) => this.tone(f, 0.12, { type: 'triangle', vol: 0.07, delay: i * 0.08 }));

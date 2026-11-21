@@ -1,6 +1,6 @@
 // Maze generation for Dustbot Dash.
 // Every level gets a fresh, procedurally generated, left-right mirrored maze
-// with no dead ends, plus a central cat bed (pen) with a cat flap (door).
+// with no dead ends, plus a central dinosaur nest (pen) with a gate (door).
 
 export const W = 19;
 export const H = 21;
@@ -20,8 +20,9 @@ export const PEN_SPOTS = [
   { x: CX - 1, y: 11 },
   { x: CX + 1, y: 11 },
   { x: CX, y: 11 },
+  { x: CX - 2, y: 11 },
 ];
-export const YARN_SPOTS = [
+export const ICE_SPOTS = [
   { x: 1, y: 1 },
   { x: W - 2, y: 1 },
   { x: 1, y: H - 2 },
@@ -56,7 +57,7 @@ export function generateMaze(rng = Math.random) {
   }
   for (let y = 0; y < H; y++) for (let x = 0; x < CX; x++) g[y][W - 1 - x] = g[y][x];
 
-  // 2. Cat bed in the middle, wrapped by a corridor ring.
+  // 2. Dinosaur nest in the middle, wrapped by a corridor ring.
   for (let y = 8; y <= 13; y++) {
     for (let x = 5; x <= 13; x++) {
       if (y === 8 || y === 13 || x === 5 || x === 13) { g[y][x] = FLOOR; continue; }

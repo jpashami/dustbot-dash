@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {
   W, H, WALL, FLOOR, PEN, DOOR, generateMaze, bfs,
-  ROBOT_START, PEN_EXIT, PEN_SPOTS, YARN_SPOTS,
+  ROBOT_START, PEN_EXIT, PEN_SPOTS, ICE_SPOTS,
 } from '../src/maze.js';
 
 function mulberry32(a) {
@@ -27,7 +27,7 @@ for (let seed = 1; seed <= RUNS; seed++) {
 
   assert.equal(at(ROBOT_START), FLOOR);
   assert.equal(at(PEN_EXIT), FLOOR);
-  for (const p of YARN_SPOTS) assert.equal(at(p), FLOOR);
+  for (const p of ICE_SPOTS) assert.equal(at(p), FLOOR);
   for (const p of PEN_SPOTS) assert.equal(at(p), PEN);
 
   const dist = bfs(g, ROBOT_START, (x, y) => g[y][x] === FLOOR);

@@ -113,12 +113,14 @@ h2 { font-size: clamp(24px, 6vw, 34px); }
   font-size: 14px;
   color: var(--muted);
 }
-.legend li { display: flex; align-items: center; gap: 10px; }
+.legend li { display: flex; align-items: flex-start; gap: 10px; line-height: 1.35; }
+.legend .ico { margin-top: 2px; }
 .legend b { color: var(--text); font-weight: 700; }
 .ico { flex: none; width: 16px; height: 16px; border-radius: 50%; }
+.ico.ice { background: radial-gradient(circle, #ffffff 0 25%, #8fd6ff 30% 60%, rgba(143, 214, 255, 0) 70%); }
+.ico.amber { background: linear-gradient(135deg, #f2a33a, #c66a12); border-radius: 30% 50% 40% 50%; }
+.ico.dino { background: #5da34a; border-radius: 60% 60% 20% 50%; box-shadow: inset -4px -3px 0 #c9e29a; }
 .ico.dust { background: radial-gradient(circle at 40% 35%, #b3afaa 0 20%, #8e8a85 22%); }
-.ico.yarn { background: #e5484d; box-shadow: inset 0 0 0 3px rgba(255, 200, 200, 0.5); }
-.ico.sock { background: #4f7cff; border-radius: 4px 4px 8px 8px; border-top: 4px solid #fff; }
 
 .btn {
   border: 0;
@@ -138,4 +140,11 @@ h2 { font-size: clamp(24px, 6vw, 34px); }
 @media (hover: none) {
   .hint .kb { display: none; }
   .hint .touch { display: inline; }
+}
+
+@media (max-width: 420px), (max-height: 640px) {
+  .overlay { gap: 10px; padding: 14px; }
+  .tag { font-size: 14px; }
+  .legend { font-size: 13px; gap: 6px; }
+  .btn { padding: 10px 28px; }
 }

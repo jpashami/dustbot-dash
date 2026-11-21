@@ -8,8 +8,9 @@ const C = {
   floor: '#ebd2aa',
   floorAlt: '#e5c99e',
   seam: 'rgba(110, 70, 30, 0.13)',
-  cushion: '#c98b7f',
-  cushionEdge: '#a96a60',
+  nest: '#c39a5e',
+  nestEdge: '#8a6233',
+  twig: 'rgba(95, 62, 25, 0.55)',
   flap: '#9a6a3f',
   dust: '#8e8a85',
   dustHi: '#b3afaa',
@@ -111,24 +112,28 @@ export class Renderer {
     drawWalls(C.wall, 0);
     drawWalls(C.wallHi, 0.09);
 
-    // Cat bed cushion and cat flap.
+    // Twig nest in the middle, with a little wooden gate.
     let px0 = W, py0 = H, px1 = 0, py1 = 0;
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       if (g[y][x] === PEN) { px0 = Math.min(px0, x); py0 = Math.min(py0, y); px1 = Math.max(px1, x + 1); py1 = Math.max(py1, y + 1); }
     }
     if (px1 > px0) {
-      c.fillStyle = C.cushionEdge;
-      roundRect(c, px0 + 0.08, py0 + 0.08, px1 - px0 - 0.16, py1 - py0 - 0.16, 0.45);
+      c.fillStyle = C.nestEdge;
+      roundRect(c, px0 + 0.06, py0 + 0.06, px1 - px0 - 0.12, py1 - py0 - 0.12, 0.6);
       c.fill();
-      c.fillStyle = C.cushion;
-      roundRect(c, px0 + 0.22, py0 + 0.2, px1 - px0 - 0.44, py1 - py0 - 0.4, 0.35);
+      c.fillStyle = C.nest;
+      roundRect(c, px0 + 0.22, py0 + 0.2, px1 - px0 - 0.44, py1 - py0 - 0.4, 0.45);
       c.fill();
-      c.setLineDash([0.12, 0.1]);
-      c.strokeStyle = 'rgba(255,255,255,0.35)';
-      c.lineWidth = 0.04;
-      roundRect(c, px0 + 0.34, py0 + 0.32, px1 - px0 - 0.68, py1 - py0 - 0.64, 0.25);
+      c.strokeStyle = C.twig;
+      c.lineWidth = 0.05;
+      c.beginPath();
+      for (let k = 0; k < 26; k++) {
+        const fx = px0 + 0.2 + ((k * 37) % 100) / 100 * (px1 - px0 - 0.6);
+        const fy = py0 + 0.15 + ((k * 61) % 100) / 100 * (py1 - py0 - 0.35);
+        const a = ((k * 53) % 100) / 100 * Math.PI;
+        c.moveTo(fx, fy); c.lineTo(fx + Math.cos(a) * 0.4, fy + Math.sin(a) * 0.12);
+      }
       c.stroke();
-      c.setLineDash([]);
     }
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       if (g[y][x] !== DOOR) continue;
@@ -153,18 +158,18 @@ export class Renderer {
     }
 
     this.drawDust(c, game.dust);
-    for (const y of game.yarn) if (y.alive) this.drawYarn(c, y, game.time);
-    if (game.sock.active) this.drawSock(c, game.sock, game.time);
+    for (const p of game.ice) if (p.alive) this.drawIce(c, p, game.time);
+    if (game.amber.active) this.drawAmber(c, game.amber, game.time);
 
-    const hideCats = (game.state === 'dying' && game.stateTime > 0.5) || game.state === 'levelclear';
-    if (!hideCats) for (const cat of game.cats) this.drawCat(c, cat, game);
+    const hideDinos = (game.state === 'dying' && game.stateTime > 0.5) || game.state === 'levelclear';
+    if (!hideDinos) for (const dino of game.dinos) this.drawDino(c, dino, game);
     if (game.state !== 'gameover') this.drawRobot(c, game.robot, game);
 
     // Pixel-space text.
     c.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     const T = this.T;
     if (game.state === 'ready') this.label(c, 'READY!', 9.5 * T, 13.5 * T, '#ffb347', T * 0.8);
-    if (game.state === 'levelclear') this.label(c, 'ROOM CLEAN!', 9.5 * T, 13.5 * T, '#7fe0a8', T * 0.8);
+    if (game.state === 'levelclear') this.label(c, 'HALL CLEAN!', 9.5 * T, 13.5 * T, '#7fe0a8', T * 0.8);
     for (const p of game.popups) {
       c.globalAlpha = Math.max(0, 1 - p.t / p.life);
       this.label(c, p.text, (p.x + 0.5) * T, (p.y + 0.5 - p.t * 0.8) * T, p.color, T * 0.55);
@@ -203,42 +208,39 @@ export class Renderer {
     c.fill();
   }
 
-  drawYarn(c, p, time) {
-    const r = 0.25 + Math.sin(time * 6) * 0.03;
+  drawIce(c, p, time) {
     const x = p.x + 0.5, y = p.y + 0.5;
-    c.save();
-    c.translate(x, y);
-    c.strokeStyle = '#d23c48';
-    c.lineWidth = 0.05;
-    c.beginPath();
-    c.moveTo(r * 0.6, r * 0.6);
-    c.quadraticCurveTo(0.4, 0.4, 0.38, 0.12);
-    c.stroke();
-    c.fillStyle = '#e5484d';
-    c.beginPath(); c.arc(0, 0, r, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = 'rgba(255, 200, 200, 0.75)';
-    c.lineWidth = 0.035;
-    for (let k = -1; k <= 1; k++) {
-      c.beginPath();
-      c.ellipse(0, 0, r * 0.95, r * (0.35 + 0.25 * Math.abs(k)), 0.7 + k * 0.9, 0, Math.PI * 2);
-      c.stroke();
-    }
-    c.restore();
+    const pulse = 1 + Math.sin(time * 6) * 0.08;
+    const glow = c.createRadialGradient(x, y, 0, x, y, 0.42 * pulse);
+    glow.addColorStop(0, 'rgba(160, 225, 255, 0.85)');
+    glow.addColorStop(1, 'rgba(160, 225, 255, 0)');
+    c.fillStyle = glow;
+    c.beginPath(); c.arc(x, y, 0.42 * pulse, 0, Math.PI * 2); c.fill();
+    this.snowflake(c, x, y, 0.27 * pulse, time * 0.8, '#ffffff');
+    this.snowflake(c, x, y, 0.16 * pulse, -time * 0.8 + 0.5, '#5fb8ec');
   }
 
-  drawSock(c, s, time) {
+  drawAmber(c, s, time) {
     if (s.timer < 2 && Math.floor(time * 8) % 2 === 0) return;
     c.save();
     c.translate(s.x + 0.5, s.y + 0.5 + Math.sin(time * 4) * 0.04);
-    c.rotate(-0.35);
-    c.fillStyle = '#4f7cff';
-    roundRect(c, -0.13, -0.34, 0.24, 0.46, 0.06);
-    c.fill();
-    c.beginPath(); c.ellipse(0.06, 0.12, 0.2, 0.12, 0, 0, Math.PI * 2); c.fill();
-    c.fillStyle = '#ffffff';
-    c.fillRect(-0.13, -0.34, 0.24, 0.09);
-    c.fillStyle = '#ffd34f';
-    c.beginPath(); c.arc(0.2, 0.13, 0.07, 0, Math.PI * 2); c.fill();
+    c.rotate(0.3);
+    c.fillStyle = '#c66a12';
+    c.beginPath();
+    c.moveTo(0, -0.3); c.lineTo(0.24, -0.12); c.lineTo(0.2, 0.18); c.lineTo(-0.04, 0.3); c.lineTo(-0.25, 0.12); c.lineTo(-0.2, -0.16);
+    c.closePath(); c.fill();
+    c.fillStyle = '#f2a33a';
+    c.beginPath();
+    c.moveTo(0, -0.2); c.lineTo(0.15, -0.08); c.lineTo(0.12, 0.12); c.lineTo(-0.03, 0.2); c.lineTo(-0.16, 0.08); c.lineTo(-0.12, -0.1);
+    c.closePath(); c.fill();
+    c.strokeStyle = '#4a2a0c';
+    c.lineWidth = 0.02;
+    c.beginPath();
+    c.moveTo(-0.04, 0.02); c.lineTo(0.05, 0.0);
+    c.moveTo(0.0, 0.01); c.lineTo(-0.05, -0.06); c.moveTo(0.0, 0.01); c.lineTo(0.05, -0.07);
+    c.stroke();
+    c.fillStyle = 'rgba(255,255,255,0.7)';
+    c.beginPath(); c.ellipse(-0.07, -0.1, 0.05, 0.025, -0.6, 0, Math.PI * 2); c.fill();
     c.restore();
   }
 
@@ -301,134 +303,279 @@ export class Renderer {
     c.lineWidth = 0.025;
     c.beginPath(); c.moveTo(-0.06, -0.19); c.lineTo(-0.06, 0.19); c.stroke();
 
-    const powered = game.yarnTimer > 0;
+    const powered = game.iceTimer > 0;
     const on = powered || Math.floor(game.time * 2) % 2 === 0;
-    c.fillStyle = powered ? '#ff5fa2' : (on ? '#3ddc84' : '#2c6a49');
+    c.fillStyle = powered ? '#7fd4ff' : (on ? '#3ddc84' : '#2c6a49');
     c.beginPath(); c.arc(0.14, 0, 0.055, 0, Math.PI * 2); c.fill();
     c.restore();
   }
 
-  drawCat(c, cat, game) {
-    const bob = cat.state === 'pen' ? Math.sin(cat.anim * 5) * 0.08 : 0;
-    const x = cat.px + 0.5, y = cat.py + 0.5 + bob;
-    const def = cat.def;
+  drawDino(c, dino, game) {
+    const def = dino.def;
+    const sp = def.species;
+    const bob = dino.state === 'pen' ? Math.sin(dino.anim * 5) * 0.06 : 0;
+    const fly = sp === 'ptera' ? -0.1 + Math.sin(dino.anim * 4) * 0.04 : 0;
+    const x = dino.px + 0.5, y = dino.py + 0.5;
+    const fossil = dino.state === 'eaten';
+    const scared = dino.state === 'scared';
+
+    let col = { body: def.color, belly: def.belly, accent: def.accent, horn: '#f5ecd2' };
+    if (scared) {
+      const flash = game.iceTimer < 2 && Math.floor(game.time * 8) % 2 === 0;
+      col = flash
+        ? { body: '#ffffff', belly: '#eef6ff', accent: '#bcd6f5', horn: '#ffffff', scared }
+        : { body: '#a9d6ff', belly: '#e3f2ff', accent: '#5f9bd8', horn: '#eaf6ff', scared };
+    } else if (fossil) {
+      col = { body: '#f1e6cc', belly: '#f7efdc', accent: '#c4ad80', horn: '#f7efdc', fossil };
+    }
+
     c.save();
     c.translate(x, y);
-    c.scale(cat.face, 1);
+    // Shadow stays on the floor, even for the flyer.
+    c.fillStyle = sp === 'ptera' ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.16)';
+    c.beginPath(); c.ellipse(0, 0.34, sp === 'ptera' ? 0.22 : 0.36, 0.07, 0, 0, Math.PI * 2); c.fill();
+
+    c.translate(scared ? Math.sin(game.time * 70) * 0.025 : 0, bob + fly);
+    c.scale(dino.face, 1);
+    if (sp === 'bronto') c.scale(1.08, 1.08);
+    if (fossil) c.globalAlpha = 0.6;
     c.lineCap = 'round';
     c.lineJoin = 'round';
 
-    if (cat.state === 'eaten') {
-      // Dashing back to bed: just a faint head with motion lines.
-      c.globalAlpha = 0.6;
-      this.catHead(c, def.color, def.accent, false, cat, 0);
-      c.strokeStyle = def.color;
-      c.lineWidth = 0.04;
+    const fast = dino.dashing || dino.charging || dino.swooping;
+    const step = dino.state === 'pen' ? 0 : Math.sin(dino.anim * (fast ? 24 : 15));
+    if (fast || fossil) this.speedLines(c, dino.anim);
+
+    switch (sp) {
+      case 'trex': this.trex(c, col, step, dino); break;
+      case 'raptor': this.raptor(c, col, step, dino); break;
+      case 'trike': this.trike(c, col, step, dino); break;
+      case 'ptera': this.ptera(c, col, dino); break;
+      default: this.bronto(c, col, step, dino); break;
+    }
+
+    if (dino.charging) {
+      c.fillStyle = 'rgba(255,255,255,0.8)';
+      const p = (dino.anim * 3) % 1;
       c.beginPath();
-      for (let k = 0; k < 3; k++) { c.moveTo(-0.05, -0.2 + k * 0.1); c.lineTo(-0.3, -0.2 + k * 0.1); }
-      c.stroke();
-      c.restore();
-      return;
+      c.arc(0.5 + p * 0.15, -0.05 - p * 0.1, 0.04 + p * 0.04, 0, Math.PI * 2);
+      c.arc(0.48 + p * 0.1, 0.06 - p * 0.06, 0.03 + p * 0.03, 0, Math.PI * 2);
+      c.fill();
     }
-
-    const scared = cat.state === 'scared';
-    let body = def.color, accent = def.accent;
-    if (scared) {
-      const flash = game.yarnTimer < 2 && Math.floor(game.time * 8) % 2 === 0;
-      body = flash ? '#ffffff' : '#a9d0ff';
-      accent = flash ? '#d4e4ff' : '#6d9fe0';
-    }
-    const moving = cat.state !== 'pen';
-    const step = moving ? Math.sin(cat.anim * 16) : 0;
-
-    c.fillStyle = 'rgba(0, 0, 0, 0.16)';
-    c.beginPath(); c.ellipse(0, 0.33, 0.36, 0.07, 0, 0, Math.PI * 2); c.fill();
-
-    // Tail
-    c.strokeStyle = scared ? accent : (def.pattern === 'patches' ? '#3a3a3a' : accent);
-    c.lineWidth = 0.09;
-    c.beginPath();
-    c.moveTo(-0.28, 0.04);
-    c.quadraticCurveTo(-0.52, 0.0, -0.46, -0.28 + Math.sin(cat.anim * 6) * 0.08);
-    c.stroke();
-
-    // Legs
-    c.strokeStyle = accent;
-    c.lineWidth = 0.075;
-    c.beginPath();
-    [[-0.19, 1], [-0.07, -1], [0.07, 1], [0.19, -1]].forEach(([lx, ph]) => {
-      c.moveTo(lx, 0.14);
-      c.lineTo(lx + step * 0.05 * ph, 0.31);
-    });
-    c.stroke();
-
-    // Body
-    c.fillStyle = body;
-    c.beginPath(); c.ellipse(0, 0.06, 0.32, 0.19, 0, 0, Math.PI * 2); c.fill();
-    if (!scared && def.pattern === 'stripes') {
-      c.strokeStyle = accent;
-      c.lineWidth = 0.045;
-      c.beginPath();
-      for (const sx of [-0.16, -0.04, 0.08]) { c.moveTo(sx, -0.12); c.lineTo(sx + 0.03, 0.02); }
-      c.stroke();
-    } else if (!scared && def.pattern === 'patches') {
-      c.fillStyle = accent;
-      c.beginPath(); c.ellipse(-0.12, 0.0, 0.11, 0.08, 0.3, 0, Math.PI * 2); c.fill();
-      c.fillStyle = '#3a3a3a';
-      c.beginPath(); c.ellipse(0.1, 0.1, 0.07, 0.05, -0.2, 0, Math.PI * 2); c.fill();
-    }
-
-    this.catHead(c, body, accent, scared, cat, def.pattern === 'patches' && !scared ? 1 : 0);
     c.restore();
+
+    if (scared) this.snowflake(c, x, y - 0.55 + fly, 0.12, game.time * 2, 'rgba(230,245,255,0.95)');
   }
 
-  catHead(c, body, accent, scared, cat, patch) {
-    const hx = 0.24, hy = -0.1;
-    c.fillStyle = body;
+  speedLines(c, t) {
+    c.strokeStyle = 'rgba(255,255,255,0.55)';
+    c.lineWidth = 0.035;
     c.beginPath();
-    c.moveTo(hx - 0.15, hy - 0.08); c.lineTo(hx - 0.11, hy - 0.3); c.lineTo(hx - 0.01, hy - 0.16);
-    c.moveTo(hx + 0.03, hy - 0.17); c.lineTo(hx + 0.13, hy - 0.31); c.lineTo(hx + 0.16, hy - 0.07);
-    c.fill();
-    c.fillStyle = '#f2a6a6';
-    c.beginPath();
-    c.moveTo(hx - 0.12, hy - 0.12); c.lineTo(hx - 0.1, hy - 0.24); c.lineTo(hx - 0.04, hy - 0.16);
-    c.moveTo(hx + 0.06, hy - 0.17); c.lineTo(hx + 0.12, hy - 0.25); c.lineTo(hx + 0.13, hy - 0.12);
-    c.fill();
-    c.fillStyle = body;
-    c.beginPath(); c.arc(hx, hy, 0.18, 0, Math.PI * 2); c.fill();
-    if (patch) {
-      c.fillStyle = accent;
-      c.beginPath(); c.arc(hx - 0.07, hy - 0.07, 0.09, 0, Math.PI * 2); c.fill();
+    for (let k = 0; k < 3; k++) {
+      const o = ((t * 4 + k * 0.33) % 1) * 0.15;
+      c.moveTo(-0.42 - o, -0.15 + k * 0.13);
+      c.lineTo(-0.62 - o, -0.15 + k * 0.13);
     }
+    c.stroke();
+  }
 
-    const ex = [hx - 0.06, hx + 0.07], ey = hy - 0.02;
-    if (scared) {
+  eye(c, x, y, r, dino, col) {
+    if (col.fossil) {
+      c.fillStyle = '#6b5a3c';
+      c.beginPath(); c.arc(x, y, r * 0.8, 0, Math.PI * 2); c.fill();
+      return;
+    }
+    if (col.scared) {
       c.strokeStyle = '#2b3a55';
-      c.lineWidth = 0.03;
+      c.lineWidth = 0.025;
       c.beginPath();
-      for (const e of ex) { c.moveTo(e - 0.03, ey - 0.02); c.lineTo(e + 0.03, ey + 0.02); c.moveTo(e + 0.03, ey - 0.02); c.lineTo(e - 0.03, ey + 0.02); }
-      c.moveTo(hx - 0.07, hy + 0.09);
-      for (let k = 1; k <= 4; k++) c.lineTo(hx - 0.07 + k * 0.035, hy + 0.09 + (k % 2 ? -0.02 : 0));
+      c.moveTo(x - r, y - r * 0.6); c.lineTo(x + r * 0.6, y); c.lineTo(x - r, y + r * 0.6);
       c.stroke();
       return;
     }
-    const lookX = 0.015, lookY = cat.dir.y * 0.02;
+    c.fillStyle = '#ffffff';
+    c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    c.fillStyle = dino.charging ? '#c0262d' : '#1d1d1d';
+    c.beginPath(); c.arc(x + r * 0.3, y + dino.dir.y * r * 0.4, r * 0.55, 0, Math.PI * 2); c.fill();
+  }
+
+  legs(c, color, width, xs, top, bottom, step) {
+    c.strokeStyle = color;
+    c.lineWidth = width;
+    c.beginPath();
+    xs.forEach((lx, i) => {
+      const ph = i % 2 ? -1 : 1;
+      c.moveTo(lx, top);
+      c.lineTo(lx + step * 0.05 * ph, bottom);
+    });
+    c.stroke();
+  }
+
+  trex(c, col, step, dino) {
+    c.fillStyle = col.body;
+    c.beginPath(); c.moveTo(-0.12, -0.06); c.quadraticCurveTo(-0.38, 0.0, -0.5, 0.12); c.lineTo(-0.1, 0.14); c.fill();
+    this.legs(c, col.accent, 0.1, [-0.06, 0.08], 0.1, 0.31, step);
+    c.fillStyle = col.body;
+    c.beginPath(); c.ellipse(0, 0.03, 0.23, 0.16, -0.2, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col.belly;
+    c.beginPath(); c.ellipse(0.06, 0.08, 0.14, 0.08, -0.2, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col.body;
+    c.beginPath(); c.moveTo(0.04, -0.1); c.lineTo(0.14, -0.3); c.lineTo(0.27, -0.2); c.lineTo(0.18, 0.02); c.fill();
+    roundRect(c, 0.1, -0.38, 0.34, 0.19, 0.07); c.fill();
+    c.fillStyle = col.accent;
+    roundRect(c, 0.15, -0.21, 0.27, 0.08, 0.04); c.fill();
     c.fillStyle = '#ffffff';
     c.beginPath();
-    for (const e of ex) { c.moveTo(e + 0.045, ey); c.arc(e, ey, 0.045, 0, Math.PI * 2); }
+    for (const tx of [0.24, 0.31, 0.38]) { c.moveTo(tx, -0.2); c.lineTo(tx + 0.025, -0.16); c.lineTo(tx + 0.05, -0.2); }
     c.fill();
-    c.fillStyle = cat.def.kind === 'wanderer' ? '#c9a400' : '#1d1d1d';
+    c.strokeStyle = col.accent;
+    c.lineWidth = 0.045;
+    c.beginPath(); c.moveTo(0.16, -0.01); c.lineTo(0.24, 0.03); c.stroke();
+    c.fillStyle = col.accent;
     c.beginPath();
-    for (const e of ex) { c.moveTo(e + lookX + 0.024, ey + lookY); c.arc(e + lookX, ey + lookY, 0.024, 0, Math.PI * 2); }
+    for (const [sx, sy] of [[-0.12, -0.05], [-0.02, -0.1], [-0.2, 0.02]]) { c.moveTo(sx + 0.03, sy); c.arc(sx, sy, 0.03, 0, Math.PI * 2); }
     c.fill();
-    c.fillStyle = '#e07a8a';
-    c.beginPath(); c.moveTo(hx + 0.14, hy + 0.04); c.lineTo(hx + 0.18, hy + 0.03); c.lineTo(hx + 0.16, hy + 0.07); c.fill();
-    c.strokeStyle = 'rgba(255,255,255,0.7)';
-    c.lineWidth = 0.015;
+    this.eye(c, 0.25, -0.3, 0.045, dino, col);
+  }
+
+  raptor(c, col, step, dino) {
+    c.strokeStyle = col.body;
+    c.lineWidth = 0.08;
+    c.beginPath(); c.moveTo(-0.1, -0.02); c.quadraticCurveTo(-0.3, -0.04, -0.5, -0.14); c.stroke();
+    c.strokeStyle = col.accent;
+    c.lineWidth = 0.055;
     c.beginPath();
-    c.moveTo(hx + 0.12, hy + 0.07); c.lineTo(hx + 0.3, hy + 0.04);
-    c.moveTo(hx + 0.12, hy + 0.09); c.lineTo(hx + 0.3, hy + 0.11);
+    for (const ph of [1, -1]) {
+      c.moveTo(0.0, 0.06);
+      c.lineTo(0.05 + step * 0.05 * ph, 0.19);
+      c.lineTo(-0.01 + step * 0.07 * ph, 0.31);
+    }
     c.stroke();
+    c.fillStyle = col.body;
+    c.beginPath(); c.ellipse(-0.02, 0.0, 0.2, 0.11, -0.15, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = col.accent;
+    c.lineWidth = 0.035;
+    c.beginPath();
+    for (const sx of [-0.12, -0.03, 0.06]) { c.moveTo(sx, -0.1); c.lineTo(sx + 0.03, -0.02); }
+    c.stroke();
+    c.strokeStyle = col.body;
+    c.lineWidth = 0.09;
+    c.beginPath(); c.moveTo(0.1, -0.04); c.lineTo(0.22, -0.2); c.stroke();
+    c.fillStyle = col.body;
+    c.beginPath(); c.ellipse(0.3, -0.22, 0.14, 0.065, 0.05, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = col.accent;
+    c.lineWidth = 0.03;
+    c.beginPath(); c.moveTo(0.3, -0.19); c.lineTo(0.43, -0.2); c.stroke();
+    c.beginPath();
+    for (let k = 0; k < 3; k++) { c.moveTo(0.2 - k * 0.03, -0.26); c.lineTo(0.12 - k * 0.04, -0.34 + k * 0.02); }
+    c.stroke();
+    c.lineWidth = 0.035;
+    c.beginPath(); c.moveTo(0.12, 0.0); c.lineTo(0.2, 0.05); c.lineTo(0.23, 0.02); c.stroke();
+    this.eye(c, 0.31, -0.245, 0.036, dino, col);
+  }
+
+  trike(c, col, step, dino) {
+    c.fillStyle = col.body;
+    c.beginPath(); c.moveTo(-0.2, -0.04); c.lineTo(-0.46, 0.09); c.lineTo(-0.2, 0.11); c.fill();
+    this.legs(c, col.accent, 0.1, [-0.17, -0.06, 0.07, 0.16], 0.1, 0.31, step);
+    c.fillStyle = col.body;
+    c.beginPath(); c.ellipse(-0.04, 0.02, 0.25, 0.16, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col.belly;
+    c.beginPath(); c.ellipse(-0.04, 0.09, 0.17, 0.06, 0, 0, Math.PI * 2); c.fill();
+    // Frill with a scalloped edge.
+    c.fillStyle = col.accent;
+    c.beginPath(); c.arc(0.19, -0.07, 0.2, 0, Math.PI * 2); c.fill();
+    c.beginPath();
+    for (let k = 0; k < 7; k++) {
+      const a = -Math.PI * 0.95 + k * (Math.PI * 1.1 / 6);
+      const fx = 0.19 + Math.cos(a) * 0.2, fy = -0.07 + Math.sin(a) * 0.2;
+      c.moveTo(fx + 0.05, fy); c.arc(fx, fy, 0.05, 0, Math.PI * 2);
+    }
+    c.fill();
+    c.fillStyle = col.belly;
+    c.beginPath(); c.arc(0.19, -0.07, 0.12, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col.body;
+    c.beginPath(); c.ellipse(0.3, 0.0, 0.14, 0.1, 0.15, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col.accent;
+    c.beginPath(); c.moveTo(0.41, -0.02); c.lineTo(0.49, 0.06); c.lineTo(0.39, 0.08); c.fill();
+    c.fillStyle = col.horn;
+    c.beginPath();
+    c.moveTo(0.27, -0.07); c.lineTo(0.47, -0.25); c.lineTo(0.33, -0.05);
+    c.moveTo(0.33, -0.07); c.lineTo(0.52, -0.2); c.lineTo(0.37, -0.03);
+    c.moveTo(0.4, -0.04); c.lineTo(0.46, -0.12); c.lineTo(0.44, -0.02);
+    c.fill();
+    this.eye(c, 0.29, -0.03, 0.035, dino, col);
+  }
+
+  ptera(c, col, dino) {
+    const flap = Math.sin(dino.anim * (dino.swooping ? 20 : 9));
+    const wing = (color, dx) => {
+      c.fillStyle = color;
+      c.beginPath();
+      c.moveTo(0.04 + dx, -0.03);
+      c.quadraticCurveTo(-0.05 + dx, -0.2 - 0.25 * flap, -0.18 + dx, -0.06 - 0.36 * flap);
+      c.lineTo(-0.3 + dx, 0.06);
+      c.closePath();
+      c.fill();
+    };
+    wing(col.accent, 0.12);
+    c.strokeStyle = col.accent;
+    c.lineWidth = 0.03;
+    c.beginPath(); c.moveTo(-0.04, 0.06); c.lineTo(-0.06, 0.15); c.moveTo(0.04, 0.06); c.lineTo(0.03, 0.15); c.stroke();
+    c.fillStyle = col.body;
+    c.beginPath(); c.ellipse(0, 0.0, 0.14, 0.08, -0.1, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col.belly;
+    c.beginPath(); c.ellipse(0.02, 0.03, 0.09, 0.04, -0.1, 0, Math.PI * 2); c.fill();
+    wing(col.body, 0);
+    c.fillStyle = col.accent;
+    c.beginPath(); c.moveTo(0.13, -0.09); c.lineTo(-0.02, -0.22); c.lineTo(0.18, -0.12); c.fill();
+    c.fillStyle = col.body;
+    c.beginPath(); c.ellipse(0.17, -0.07, 0.08, 0.06, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col.fossil || col.scared ? col.horn : '#f2c14e';
+    c.beginPath(); c.moveTo(0.21, -0.1); c.lineTo(0.44, -0.04); c.lineTo(0.21, -0.03); c.fill();
+    this.eye(c, 0.18, -0.085, 0.03, dino, col);
+  }
+
+  bronto(c, col, step, dino) {
+    c.fillStyle = col.body;
+    c.beginPath(); c.moveTo(-0.24, -0.02); c.quadraticCurveTo(-0.45, 0.0, -0.55, -0.08); c.quadraticCurveTo(-0.42, 0.08, -0.22, 0.12); c.fill();
+    this.legs(c, col.accent, 0.11, [-0.2, -0.09, 0.05, 0.15], 0.12, 0.31, step);
+    c.fillStyle = col.body;
+    c.beginPath(); c.ellipse(-0.04, 0.04, 0.27, 0.17, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col.belly;
+    c.beginPath(); c.ellipse(-0.03, 0.11, 0.18, 0.06, 0, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = col.body;
+    c.lineWidth = 0.1;
+    c.beginPath(); c.moveTo(0.14, 0.0); c.quadraticCurveTo(0.3, -0.12, 0.29, -0.36); c.stroke();
+    c.fillStyle = col.body;
+    c.beginPath(); c.ellipse(0.34, -0.39, 0.1, 0.06, 0.15, 0, Math.PI * 2); c.fill();
+    c.fillStyle = col.accent;
+    c.beginPath();
+    for (const [sx, sy] of [[-0.14, -0.06], [-0.02, -0.1], [0.08, -0.06]]) { c.moveTo(sx + 0.035, sy); c.arc(sx, sy, 0.035, 0, Math.PI * 2); }
+    c.fill();
+    this.eye(c, 0.36, -0.41, 0.03, dino, col);
+  }
+
+  snowflake(c, x, y, r, rot, color) {
+    c.save();
+    c.translate(x, y);
+    c.rotate(rot);
+    c.strokeStyle = color;
+    c.lineWidth = r * 0.22;
+    c.lineCap = 'round';
+    c.beginPath();
+    for (let k = 0; k < 6; k++) {
+      const a = k * Math.PI / 3;
+      const ca = Math.cos(a), sa = Math.sin(a);
+      c.moveTo(0, 0); c.lineTo(ca * r, sa * r);
+      const bx = ca * r * 0.6, by = sa * r * 0.6;
+      for (const s of [-1, 1]) {
+        const b = a + s * 0.7;
+        c.moveTo(bx, by); c.lineTo(bx + Math.cos(b) * r * 0.32, by + Math.sin(b) * r * 0.32);
+      }
+    }
+    c.stroke();
+    c.restore();
   }
 }
 
